@@ -93,9 +93,10 @@ export class WebGLRenderer {
     this.createShaders();
     this.createPlaneGeometry();
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
-    gl.clearColor(0.05, 0.05, 0.1, 1.0);
+    // Disable back-face culling so we can see the underside too
+    gl.disable(gl.CULL_FACE);
+    // Darker blue-gray background
+    gl.clearColor(0.08, 0.1, 0.15, 1.0);
     this.resize();
   }
   
@@ -227,57 +228,84 @@ ${fragOutDecl}
 
 void main() {
   vec3 normal = normalize(vNormal);
-  vec3 lightDir = normalize(uLightDir);
   vec3 viewDir = normalize(uCameraPos - vPosition);
   
-  float diff = max(dot(normal, lightDir), 0.0);
-  vec3 halfDir = normalize(lightDir + viewDir);
-  float spec = pow(max(dot(normal, halfDir), 0.0), 48.0);
+  // Hemisphere lighting - smooth blend between sky and ground colors
+  // This ensures ALL surfaces get some light regardless of orientation
+  float hemisphereBlend = normal.z * 0.5 + 0.5; // 0 = facing down, 1 = facing up
+  vec3 skyColor = vec3(0.9, 0.95, 1.0);   // Bright sky
+  vec3 groundColor = vec3(0.4, 0.45, 0.6); // Reflected ground light
+  vec3 hemisphereLight = mix(groundColor, skyColor, hemisphereBlend);
   
-  // Height-based coloring with smooth gradient
-  float h = clamp(vHeight / 1.2, -1.0, 1.0);
+  // Key light (main directional)
+  vec3 lightDir = normalize(uLightDir);
+  float keyLight = max(dot(normal, lightDir), 0.0);
+  
+  // Fill light from camera direction (always visible parts get extra light)
+  float fillLight = max(dot(normal, viewDir), 0.0) * 0.3;
+  
+  // Wrap lighting - extends diffuse around edges (softer shadows)
+  float wrapLight = (dot(normal, lightDir) + 0.5) / 1.5;
+  wrapLight = max(wrapLight, 0.0) * 0.4;
+  
+  vec3 halfDir = normalize(lightDir + viewDir);
+  float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+  
+  // Height-based coloring
+  float h = clamp(vHeight / 1.0, -1.0, 1.0);
   float absH = abs(h);
   
-  // Color palette: dark blue -> cyan -> white -> orange -> red
+  // Vibrant color palette
   vec3 color;
   if (h > 0.0) {
-    // Positive height: cyan -> white -> orange -> red (hot)
-    if (h < 0.3) {
-      color = mix(vec3(0.1, 0.3, 0.5), vec3(0.2, 0.8, 1.0), h / 0.3);
-    } else if (h < 0.6) {
-      color = mix(vec3(0.2, 0.8, 1.0), vec3(1.0, 0.95, 0.8), (h - 0.3) / 0.3);
+    // Peaks: aqua -> cyan -> white -> gold -> coral
+    if (h < 0.25) {
+      color = mix(vec3(0.3, 0.55, 0.7), vec3(0.4, 0.9, 1.0), h / 0.25);
+    } else if (h < 0.5) {
+      color = mix(vec3(0.4, 0.9, 1.0), vec3(0.95, 1.0, 1.0), (h - 0.25) / 0.25);
+    } else if (h < 0.75) {
+      color = mix(vec3(1.0, 0.95, 0.8), vec3(1.0, 0.7, 0.3), (h - 0.5) / 0.25);
     } else {
-      color = mix(vec3(1.0, 0.6, 0.2), vec3(1.0, 0.2, 0.1), (h - 0.6) / 0.4);
+      color = mix(vec3(1.0, 0.7, 0.3), vec3(1.0, 0.4, 0.3), (h - 0.75) / 0.25);
     }
   } else {
-    // Negative height: dark blue -> purple -> magenta (cool)
+    // Troughs: slate -> indigo -> purple -> magenta
     float nh = -h;
-    if (nh < 0.4) {
-      color = mix(vec3(0.1, 0.2, 0.4), vec3(0.2, 0.1, 0.5), nh / 0.4);
+    if (nh < 0.3) {
+      color = mix(vec3(0.35, 0.45, 0.6), vec3(0.4, 0.35, 0.7), nh / 0.3);
+    } else if (nh < 0.6) {
+      color = mix(vec3(0.4, 0.35, 0.7), vec3(0.55, 0.3, 0.65), (nh - 0.3) / 0.3);
     } else {
-      color = mix(vec3(0.2, 0.1, 0.5), vec3(0.6, 0.1, 0.4), (nh - 0.4) / 0.6);
+      color = mix(vec3(0.55, 0.3, 0.65), vec3(0.7, 0.3, 0.55), (nh - 0.6) / 0.4);
     }
   }
   
-  // Add glow effect at peaks
-  float glow = smoothstep(0.5, 1.0, absH) * 0.4;
-  color += vec3(glow);
+  // Intensity boost at peaks/troughs
+  float intensity = 1.0 + absH * 0.3;
+  color *= intensity;
   
-  // Edge fade for membrane boundary
-  float edge = smoothstep(0.0, 0.08, vUV.x) * smoothstep(0.0, 0.08, 1.0 - vUV.x) *
-               smoothstep(0.0, 0.08, vUV.y) * smoothstep(0.0, 0.08, 1.0 - vUV.y);
-  color *= 0.3 + 0.7 * edge;
+  // Edge fade (softer, higher minimum)
+  float edge = smoothstep(0.0, 0.06, vUV.x) * smoothstep(0.0, 0.06, 1.0 - vUV.x) *
+               smoothstep(0.0, 0.06, vUV.y) * smoothstep(0.0, 0.06, 1.0 - vUV.y);
+  float edgeFactor = 0.7 + 0.3 * edge;
   
-  // Lighting
-  vec3 ambient = color * 0.3;
-  vec3 diffuse = color * diff * 0.5;
-  vec3 specular = vec3(1.0, 0.95, 0.9) * spec * 0.35;
+  // Combine lighting - high base level ensures nothing is too dark
+  float totalLight = 0.5 + keyLight * 0.35 + fillLight + wrapLight;
   
-  // Fresnel rim lighting
-  float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
-  vec3 rim = vec3(0.3, 0.5, 0.8) * fresnel * 0.2 * edge;
+  vec3 litColor = color * hemisphereLight * totalLight * edgeFactor;
   
-  ${fragOut} = vec4(ambient + diffuse + specular + rim, 1.0);
+  // Specular
+  vec3 specular = vec3(1.0, 0.98, 0.95) * spec * 0.5;
+  
+  // Rim/Fresnel - bright edge highlighting
+  float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.0);
+  vec3 rim = vec3(0.5, 0.7, 1.0) * fresnel * 0.4;
+  
+  // Final color - clamp to prevent over-saturation
+  vec3 finalColor = litColor + specular + rim;
+  finalColor = min(finalColor, vec3(1.2)); // Allow slight HDR bloom
+  
+  ${fragOut} = vec4(finalColor, 1.0);
 }
 `;
 
