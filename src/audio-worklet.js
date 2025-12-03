@@ -47,6 +47,11 @@ class ModalDrumProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (event) => {
       const { type, data } = event.data;
       
+      // Debug: log all incoming messages
+      if (type !== 'excite') {
+        console.log('Worklet received:', type);
+      }
+      
       switch (type) {
         case 'init':
           this.initModes(data);
@@ -72,6 +77,9 @@ class ModalDrumProcessor extends AudioWorkletProcessor {
           break;
         case 'setChord':
           this.setChord(data.amplitudes, data.sustain);
+          break;
+        case 'exciteModes':
+          this.exciteModes(data.amplitudes);
           break;
         case 'setChordParams':
           if (data.attack !== undefined) this.chordAttack = data.attack;
@@ -108,6 +116,10 @@ class ModalDrumProcessor extends AudioWorkletProcessor {
       peakAmp: 0.001
     }));
     
+    // Debug: print mic gains
+    const micGains = this.modes.slice(0, 6).map(m => m.micGain.toFixed(3));
+    console.log('initModes:', numModes, 'modes, first 6 micGains:', micGains.join(', '));
+    
     // Initialize chord amplitude arrays
     this.targetAmplitudes = new Float32Array(numModes);
     this.currentAmplitudes = new Float32Array(numModes);
@@ -139,15 +151,47 @@ class ModalDrumProcessor extends AudioWorkletProcessor {
   }
   
   setChord(amplitudes, sustain = true) {
-    if (!this.modes || !this.targetAmplitudes) return;
+    if (!this.modes || !this.targetAmplitudes) {
+      console.warn('setChord: modes not initialized');
+      return;
+    }
     
     this.chordMode = sustain;
+    let activeModes = 0;
+    let totalPulse = 0;
     
     for (let i = 0; i < this.modes.length; i++) {
       this.targetAmplitudes[i] = amplitudes[i] || 0;
       
+      // When not sustaining, give a strong impulse to each mode
       if (!sustain && amplitudes[i] > 0) {
-        this.modes[i].pendingPulse += amplitudes[i] * 0.15;
+        const pulse = amplitudes[i] * 1.0;  // Strong impulse for percussion
+        this.modes[i].pendingPulse += pulse;
+        totalPulse += pulse;
+        activeModes++;
+      }
+    }
+    
+    console.log('setChord: sustain=', sustain, 'activeModes=', activeModes, 'totalPulse=', totalPulse.toFixed(3));
+    
+    // Debug: check first few mic gains
+    if (this.modes.length > 0) {
+      const gains = this.modes.slice(0, 6).map(m => m.micGain.toFixed(3));
+      console.log('First 6 micGains:', gains.join(', '));
+    }
+  }
+  
+  /**
+   * Excite specific modes with impulses (additive, doesn't clear existing)
+   * Used for arpeggiator - each note adds energy to its resonators
+   */
+  exciteModes(amplitudes) {
+    if (!this.modes) return;
+    
+    for (let i = 0; i < this.modes.length && i < amplitudes.length; i++) {
+      if (amplitudes[i] > 0) {
+        // Add impulse to this mode (doesn't replace, adds energy)
+        this.modes[i].pendingPulse += amplitudes[i] * 1.0;
       }
     }
   }
@@ -158,6 +202,12 @@ class ModalDrumProcessor extends AudioWorkletProcessor {
     this.chordMode = false;
     for (let i = 0; i < this.targetAmplitudes.length; i++) {
       this.targetAmplitudes[i] = 0;
+    }
+    // Also clear current amplitudes to stop sustained sound immediately
+    if (this.currentAmplitudes) {
+      for (let i = 0; i < this.currentAmplitudes.length; i++) {
+        this.currentAmplitudes[i] = 0;
+      }
     }
   }
   

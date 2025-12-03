@@ -263,32 +263,41 @@ export function createChord(modeIndices, f0 = 200) {
 
 /**
  * Preset chord shapes - named by their geometric character
+ * Now expanded for 6×6 grid
  */
 export const ChordPresets = {
   // Simple shapes
   fundamental: [[1, 1]],
-  horizontal: [[1, 1], [2, 1], [3, 1]],
-  vertical: [[1, 1], [1, 2], [1, 3]],
-  diagonal: [[1, 1], [2, 2], [3, 3]],
+  horizontal: [[1, 1], [2, 1], [3, 1], [4, 1]],
+  vertical: [[1, 1], [1, 2], [1, 3], [1, 4]],
+  diagonal: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]],
   
-  // Symmetric shapes
-  cross: [[2, 1], [1, 2], [2, 3], [3, 2]],
-  square: [[1, 1], [1, 2], [2, 1], [2, 2]],
-  diamond: [[2, 1], [1, 2], [3, 2], [2, 3]],
+  // Symmetric shapes (centered more)
+  cross: [[3, 2], [2, 3], [3, 4], [4, 3], [3, 3]],
+  square: [[2, 2], [2, 3], [3, 2], [3, 3]],
+  diamond: [[3, 1], [1, 3], [5, 3], [3, 5], [3, 3]],
   
-  // Complex shapes
-  star: [[1, 1], [1, 3], [3, 1], [3, 3], [2, 2]],
-  grid: [[1, 1], [1, 3], [3, 1], [3, 3]],
-  full: [[1, 1], [2, 2], [3, 3], [4, 4]],
+  // Complex shapes spanning the grid
+  star: [[1, 1], [1, 5], [5, 1], [5, 5], [3, 3]],
+  grid: [[1, 1], [1, 6], [6, 1], [6, 6]],
+  full: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]],
   
   // Asymmetric / tension shapes
-  lean_right: [[1, 1], [2, 1], [3, 2]],
-  lean_left: [[1, 1], [1, 2], [2, 3]],
+  lean_right: [[1, 1], [2, 1], [3, 2], [4, 3], [5, 4]],
+  lean_left: [[1, 1], [1, 2], [2, 3], [3, 4], [4, 5]],
   
-  // By symmetry class
-  all_even: [[2, 2], [2, 4], [4, 2], [4, 4]],
-  all_odd: [[1, 1], [1, 3], [3, 1], [3, 3]],
-  mixed: [[1, 1], [2, 2], [1, 2], [2, 1]],
+  // Large symmetric patterns
+  all_even: [[2, 2], [2, 4], [4, 2], [4, 4], [2, 6], [6, 2], [4, 6], [6, 4], [6, 6]],
+  all_odd: [[1, 1], [1, 3], [3, 1], [3, 3], [1, 5], [5, 1], [3, 5], [5, 3], [5, 5]],
+  mixed: [[1, 1], [2, 2], [3, 3], [1, 3], [3, 1], [2, 4], [4, 2]],
+  
+  // Musical intervals (spaced for harmonic relationships)
+  octave_like: [[1, 1], [2, 2], [4, 4]],            // √2 frequency ratios
+  fifth_like: [[1, 1], [2, 1], [1, 2], [3, 2]],    // Approximating 3:2
+  
+  // Edge patterns
+  perimeter: [[1, 1], [1, 3], [1, 6], [3, 6], [6, 6], [6, 3], [6, 1], [3, 1]],
+  spiral: [[1, 1], [2, 1], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [1, 2]],
 };
 
 /**
@@ -556,4 +565,245 @@ export function amplitudesToChord(amps, mMax = 4, nMax = 4, f0 = 200, threshold 
   }
   
   return createChord(indices, f0);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODAL SCALES - Subsets of the mode lattice with musical character
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Scale definitions - each returns array of [m,n] pairs
+ * Scales constrain which modes are "in key"
+ */
+export const ScaleDefinitions = {
+  // Full chromatic - all modes
+  chromatic: (mMax = 6) => {
+    const modes = [];
+    for (let n = 1; n <= mMax; n++) {
+      for (let m = 1; m <= mMax; m++) {
+        modes.push([m, n]);
+      }
+    }
+    return modes;
+  },
+  
+  // Diagonal scale - fundamental harmonics (m=n)
+  diagonal: (mMax = 6) => {
+    const modes = [];
+    for (let i = 1; i <= mMax; i++) {
+      modes.push([i, i]);
+    }
+    return modes;
+  },
+  
+  // Pentatonic - 5 most consonant modes (low complexity, good symmetry)
+  pentatonic: () => [[1,1], [1,2], [2,1], [2,2], [3,3]],
+  
+  // L-shape - fundamental row and column (like a musical "key")
+  ell: (mMax = 6) => {
+    const modes = [[1, 1]];
+    for (let i = 2; i <= mMax; i++) {
+      modes.push([i, 1]);
+      modes.push([1, i]);
+    }
+    return modes;
+  },
+  
+  // Symmetric - modes where m=n or one step away
+  symmetric: (mMax = 6) => {
+    const modes = [];
+    for (let i = 1; i <= mMax; i++) {
+      modes.push([i, i]);
+      if (i < mMax) {
+        modes.push([i, i + 1]);
+        modes.push([i + 1, i]);
+      }
+    }
+    return modes;
+  },
+  
+  // Odd-only - creates specific interference patterns
+  oddOnly: (mMax = 6) => {
+    const modes = [];
+    for (let m = 1; m <= mMax; m += 2) {
+      for (let n = 1; n <= mMax; n += 2) {
+        modes.push([m, n]);
+      }
+    }
+    return modes;
+  },
+  
+  // Even-only - different spatial character
+  evenOnly: (mMax = 6) => {
+    const modes = [];
+    for (let m = 2; m <= mMax; m += 2) {
+      for (let n = 2; n <= mMax; n += 2) {
+        modes.push([m, n]);
+      }
+    }
+    return modes;
+  },
+  
+  // Simple - low nodal complexity (≤3 total nodal lines)
+  simple: (mMax = 6, maxNodes = 3) => {
+    const modes = [];
+    for (let m = 1; m <= mMax; m++) {
+      for (let n = 1; n <= mMax; n++) {
+        if ((m - 1) + (n - 1) <= maxNodes) {
+          modes.push([m, n]);
+        }
+      }
+    }
+    return modes;
+  },
+  
+  // Complex - high nodal complexity (≥4 nodal lines)
+  complex: (mMax = 6) => {
+    const modes = [];
+    for (let m = 1; m <= mMax; m++) {
+      for (let n = 1; n <= mMax; n++) {
+        if ((m - 1) + (n - 1) >= 4) {
+          modes.push([m, n]);
+        }
+      }
+    }
+    return modes;
+  },
+  
+  // Horizontal - fixed n, varying m (one "row")
+  horizontal: (n = 1, mMax = 6) => {
+    const modes = [];
+    for (let m = 1; m <= mMax; m++) {
+      modes.push([m, n]);
+    }
+    return modes;
+  },
+  
+  // Vertical - fixed m, varying n (one "column")
+  vertical: (m = 1, mMax = 6) => {
+    const modes = [];
+    for (let n = 1; n <= mMax; n++) {
+      modes.push([m, n]);
+    }
+    return modes;
+  },
+  
+  // Harmonic series approximation - modes closest to integer frequency ratios
+  harmonic: (f0 = 200, mMax = 6) => {
+    const modes = [];
+    const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
+    
+    for (const h of harmonics) {
+      const targetFreq = f0 * h;
+      let best = null;
+      let bestDiff = Infinity;
+      
+      for (let m = 1; m <= mMax; m++) {
+        for (let n = 1; n <= mMax; n++) {
+          const freq = modeFrequency(m, n, f0);
+          const diff = Math.abs(freq - targetFreq);
+          if (diff < bestDiff && diff < targetFreq * 0.1) {
+            bestDiff = diff;
+            best = [m, n];
+          }
+        }
+      }
+      
+      if (best && !modes.some(([m, n]) => m === best[0] && n === best[1])) {
+        modes.push(best);
+      }
+    }
+    
+    return modes;
+  },
+  
+  // Inharmonic - modes that avoid simple frequency ratios
+  inharmonic: (f0 = 200, mMax = 6) => {
+    const harmonic = ScaleDefinitions.harmonic(f0, mMax);
+    const harmonicSet = new Set(harmonic.map(([m, n]) => `${m},${n}`));
+    
+    const modes = [];
+    for (let m = 1; m <= mMax; m++) {
+      for (let n = 1; n <= mMax; n++) {
+        if (!harmonicSet.has(`${m},${n}`)) {
+          modes.push([m, n]);
+        }
+      }
+    }
+    return modes;
+  },
+};
+
+/**
+ * Create a Scale object with helper methods
+ */
+export function createScale(name, mMax = 6, f0 = 200) {
+  const generator = ScaleDefinitions[name];
+  if (!generator) return null;
+  
+  const modeIndices = generator(mMax, f0);
+  const modeSet = new Set(modeIndices.map(([m, n]) => `${m},${n}`));
+  
+  return {
+    name,
+    modes: modeIndices.map(([m, n]) => createMode(m, n, f0)),
+    modeIndices,
+    
+    // Check if a mode is in this scale
+    contains(m, n) {
+      return modeSet.has(`${m},${n}`);
+    },
+    
+    // Get the nearest scale tone to an arbitrary mode
+    nearest(m, n) {
+      let best = modeIndices[0];
+      let bestDist = Infinity;
+      
+      for (const [sm, sn] of modeIndices) {
+        const dist = Math.abs(sm - m) + Math.abs(sn - n);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = [sm, sn];
+        }
+      }
+      
+      return best;
+    },
+    
+    // Filter a chord to only include scale tones
+    filterChord(chord) {
+      const filtered = chord.modes.filter(mode => this.contains(mode.m, mode.n));
+      return createChord(filtered.map(m => [m.m, m.n, m.amplitude]), f0);
+    },
+    
+    // Get random mode from scale
+    random() {
+      const idx = Math.floor(Math.random() * modeIndices.length);
+      return modeIndices[idx];
+    },
+    
+    // Get modes sorted by frequency
+    byFrequency() {
+      return [...this.modes].sort((a, b) => a.freq - b.freq);
+    }
+  };
+}
+
+/**
+ * Get scale info for UI display
+ */
+export function getScaleInfo() {
+  return [
+    { name: 'chromatic', label: 'Chromatic (all)', description: 'All 36 modes' },
+    { name: 'pentatonic', label: 'Pentatonic', description: '5 most consonant modes' },
+    { name: 'diagonal', label: 'Diagonal', description: 'Modes where m=n' },
+    { name: 'ell', label: 'L-Shape', description: 'First row and column' },
+    { name: 'symmetric', label: 'Symmetric', description: 'Near-diagonal modes' },
+    { name: 'oddOnly', label: 'Odd Only', description: 'Odd m and n values' },
+    { name: 'evenOnly', label: 'Even Only', description: 'Even m and n values' },
+    { name: 'simple', label: 'Simple', description: '≤3 nodal lines' },
+    { name: 'complex', label: 'Complex', description: '≥4 nodal lines' },
+    { name: 'harmonic', label: 'Harmonic', description: 'Near integer ratios' },
+    { name: 'inharmonic', label: 'Inharmonic', description: 'Avoids simple ratios' },
+  ];
 }

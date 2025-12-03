@@ -210,8 +210,8 @@
     
     .mode-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 3px;
       margin-top: 12px;
     }
     
@@ -222,11 +222,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.7rem;
+      font-size: 0.6rem;
       font-family: monospace;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
       user-select: none;
+      position: relative;
     }
     
     .mode-cell:hover {
@@ -281,6 +282,540 @@
       margin-top: 4px;
     }
     
+    /* Articulation controls */
+    .articulation-section {
+      background: linear-gradient(135deg, #1a1a25 0%, #1e1e2a 100%);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      border: 1px solid #2a2a3a;
+    }
+    
+    .articulation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .articulation-title {
+      font-size: 0.8rem;
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+    
+    .articulation-mode-btns {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .articulation-mode-btn {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 4px;
+      background: #2a2a3a;
+      color: #888;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .articulation-mode-btn:hover {
+      background: #3a3a4a;
+    }
+    
+    .articulation-mode-btn.active {
+      background: #4a9eff;
+      color: #fff;
+    }
+    
+    .articulation-params {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .articulation-param {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .articulation-param label {
+      font-size: 0.65rem;
+      color: #888;
+      text-transform: uppercase;
+    }
+    
+    .articulation-param input[type="range"] {
+      width: 100%;
+      height: 4px;
+    }
+    
+    .articulation-param .value {
+      font-size: 0.7rem;
+      color: #4a9eff;
+      text-align: right;
+    }
+    
+    .direction-btns {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    
+    .direction-btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      background: #2a2a3a;
+      color: #888;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .direction-btn:hover {
+      background: #3a3a4a;
+    }
+    
+    .direction-btn.active {
+      background: #3a5a3a;
+      color: #8f8;
+    }
+    
+    .articulation-presets {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    
+    .artic-preset-btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      background: #25253a;
+      color: #aaa;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .artic-preset-btn:hover {
+      background: #35354a;
+      color: #fff;
+    }
+    
+    .artic-preset-btn.active {
+      background: #4a6aaa;
+      color: #fff;
+    }
+    
+    /* Euclidean Sequencer styles */
+    .euclidean-section {
+      background: linear-gradient(135deg, #1a1a25 0%, #1e1e2a 100%);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      border: 1px solid #2a2a3a;
+    }
+    
+    .euclidean-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .euclidean-title {
+      font-size: 0.75rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .euclidean-notation {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #4a9eff;
+      background: #2a2a3a;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    
+    .euclidean-params {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .euclidean-param {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .euclidean-param label {
+      font-size: 0.75rem;
+      color: #888;
+      min-width: 50px;
+    }
+    
+    .euclidean-param input[type="range"] {
+      flex: 1;
+      min-width: 60px;
+    }
+    
+    .euclidean-param .value {
+      font-size: 0.75rem;
+      color: #4a9eff;
+      min-width: 28px;
+      text-align: right;
+      font-family: monospace;
+    }
+    
+    .euclidean-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: #15151f;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    
+    .euclidean-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+    
+    .euclidean-step {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #3a3a4a;
+      background: #1a1a25;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      color: #555;
+    }
+    
+    .euclidean-step:hover {
+      border-color: #5a5a6a;
+      transform: scale(1.1);
+    }
+    
+    .euclidean-step.active {
+      background: #4a9eff;
+      border-color: #4a9eff;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(74, 158, 255, 0.4);
+    }
+    
+    .euclidean-step.current {
+      transform: scale(1.2);
+      box-shadow: 0 0 16px rgba(255, 200, 100, 0.6);
+    }
+    
+    .euclidean-step.active.current {
+      background: #ff9f43;
+      border-color: #ff9f43;
+    }
+    
+    .euclidean-step.manual-override {
+      border-style: dashed;
+    }
+    
+    .euclidean-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .euclidean-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #2a2a3a;
+      color: #e0e0e0;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .euclidean-btn:hover {
+      background: #3a4a5a;
+    }
+    
+    .euclidean-btn.primary {
+      background: #4a9eff;
+      color: #fff;
+    }
+    
+    .euclidean-btn.primary:hover {
+      background: #5ab0ff;
+    }
+    
+    .euclidean-btn.playing {
+      background: #ff6b6b;
+    }
+    
+    /* Chord Queue styles */
+    .chord-queue-section {
+      margin-top: 12px;
+      padding: 10px;
+      background: #15151f;
+      border-radius: 6px;
+    }
+    
+    .chord-queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .chord-queue-title {
+      font-size: 0.7rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .chord-queue-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    
+    .chord-queue-controls .euclidean-btn {
+      padding: 4px 10px;
+      font-size: 0.7rem;
+    }
+    
+    .chord-queue {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-height: 36px;
+      align-items: center;
+    }
+    
+    .chord-queue-empty {
+      color: #555;
+      font-size: 0.7rem;
+      font-style: italic;
+    }
+    
+    .chord-queue-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #2a2a3a;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: #e0e0e0;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .chord-queue-item:hover {
+      background: #3a4a5a;
+    }
+    
+    .chord-queue-item.current {
+      background: #4a9eff;
+      color: #fff;
+    }
+    
+    .chord-queue-item .remove {
+      color: #888;
+      font-size: 0.6rem;
+      margin-left: 4px;
+      cursor: pointer;
+    }
+    
+    .chord-queue-item .remove:hover {
+      color: #ff6b6b;
+    }
+    
+    .sync-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #2a2a3a;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: #888;
+      transition: all 0.15s;
+    }
+    
+    .sync-toggle:hover {
+      background: #3a4a5a;
+    }
+    
+    .sync-toggle input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #4a9eff;
+    }
+    
+    .sync-toggle:has(input:checked) {
+      background: #2a4a6a;
+      color: #4a9eff;
+    }
+    
+    .euclidean-chord-select {
+      padding: 6px 10px;
+      background: #2a2a3a;
+      border: none;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    
+    /* Sequencer styles */
+    .sequencer-section {
+      background: #1a1a25;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    
+    .seq-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .seq-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 6px;
+      background: #2a2a3a;
+      color: #e0e0e0;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .seq-btn:hover {
+      background: #3a4a5a;
+    }
+    
+    .seq-btn.primary {
+      background: #4a9eff;
+      color: #fff;
+    }
+    
+    .seq-btn.primary:hover {
+      background: #5ab0ff;
+    }
+    
+    .seq-timeline {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 8px 0;
+      min-height: 50px;
+      align-items: center;
+    }
+    
+    .seq-step {
+      flex: 0 0 auto;
+      min-width: 60px;
+      padding: 8px 10px;
+      background: #2a2a3a;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      text-align: center;
+    }
+    
+    .seq-step:hover {
+      background: #3a4a5a;
+    }
+    
+    .seq-step.active {
+      background: #4a9eff;
+      color: #fff;
+      transform: scale(1.05);
+    }
+    
+    .seq-step-num {
+      display: block;
+      font-size: 0.65rem;
+      color: #888;
+      margin-bottom: 2px;
+    }
+    
+    .seq-step.active .seq-step-num {
+      color: rgba(255,255,255,0.7);
+    }
+    
+    .seq-step-name {
+      display: block;
+      font-weight: 500;
+    }
+    
+    .seq-step-remove {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 16px;
+      height: 16px;
+      border: none;
+      border-radius: 50%;
+      background: #ff4a4a;
+      color: #fff;
+      font-size: 0.7rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    
+    .seq-step:hover .seq-step-remove {
+      opacity: 1;
+    }
+    
+    .seq-empty {
+      color: #666;
+      font-size: 0.8rem;
+      padding: 12px;
+      text-align: center;
+    }
+    
+    /* Vertical sliders for ADSR */
+    .vertical-slider {
+      width: 100%;
+      height: 60px;
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
+      appearance: slider-vertical;
+    }
+    
     @media (max-width: 768px) {
       .main-area {
         flex-direction: column;
@@ -326,34 +861,44 @@
             <input type="range" id="decay-slider" min="0.5" max="5" step="0.1" value="2">
             <span class="value" id="decay-value">2.0s</span>
           </div>
+          <div class="control-row">
+            <label>Reverb</label>
+            <input type="range" id="reverb-slider" min="0" max="1" step="0.05" value="0.3">
+            <span class="value" id="reverb-value">30%</span>
+          </div>
+          <div class="control-row">
+            <label>Transient</label>
+            <input type="range" id="transient-slider" min="0" max="1" step="0.05" value="0.2">
+            <span class="value" id="transient-value">20%</span>
+          </div>
         </div>
         
         <div class="control-section">
           <h3>Microphone Position</h3>
           <div class="control-row">
             <label>Mic X</label>
-            <input type="range" id="mic-x-slider" min="0.05" max="0.95" step="0.01" value="0.3">
-            <span class="value" id="mic-x-value">0.30</span>
+            <input type="range" id="mic-x-slider" min="0.05" max="0.95" step="0.01" value="0.37">
+            <span class="value" id="mic-x-value">0.37</span>
           </div>
           <div class="control-row">
             <label>Mic Y</label>
-            <input type="range" id="mic-y-slider" min="0.05" max="0.95" step="0.01" value="0.4">
-            <span class="value" id="mic-y-value">0.40</span>
+            <input type="range" id="mic-y-slider" min="0.05" max="0.95" step="0.01" value="0.41">
+            <span class="value" id="mic-y-value">0.41</span>
           </div>
-          <p class="hint">Move mic to change which modes you hear</p>
+          <p class="hint">Move mic to hear different modes (avoid fractions like 1/2, 1/3, 1/4...)</p>
         </div>
         
         <div class="control-section">
           <h3>Visualization</h3>
           <div class="control-row">
             <label>Height</label>
-            <input type="range" id="height-slider" min="2" max="20" step="0.5" value="8">
-            <span class="value" id="height-value">8</span>
+            <input type="range" id="height-slider" min="0.5" max="15" step="0.5" value="2">
+            <span class="value" id="height-value">2</span>
           </div>
           <div class="control-row">
-            <label>Smoothing</label>
-            <input type="range" id="smoothing-slider" min="0" max="0.95" step="0.05" value="0.7">
-            <span class="value" id="smoothing-value">0.7</span>
+            <label>Decay</label>
+            <input type="range" id="smoothing-slider" min="0.5" max="0.98" step="0.02" value="0.92">
+            <span class="value" id="smoothing-value">0.92</span>
           </div>
           <div class="control-row">
             <label>Grid</label>
@@ -395,9 +940,54 @@
         <div class="control-section">
           <h3>Modal Chords</h3>
           <div class="control-row">
+            <label>Scale</label>
+            <select id="scale-select">
+              <option value="chromatic">Chromatic (all)</option>
+              <option value="pentatonic">Pentatonic</option>
+              <option value="diagonal">Diagonal</option>
+              <option value="ell">L-Shape</option>
+              <option value="symmetric">Symmetric</option>
+              <option value="oddOnly">Odd Only</option>
+              <option value="evenOnly">Even Only</option>
+              <option value="simple">Simple</option>
+              <option value="harmonic">Harmonic</option>
+            </select>
+          </div>
+          <div class="control-row">
             <label>Sustain</label>
             <input type="checkbox" id="chord-sustain">
             <button id="clear-chord">Clear</button>
+            <button id="play-chord" style="background: #4a9eff;">Play</button>
+          </div>
+          
+          <!-- ADSR Envelope -->
+          <div style="margin: 12px 0; padding: 10px; background: #1a1a25; border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px;">Envelope</span>
+              <canvas id="adsr-display" width="120" height="40" style="background: #0a0a0f; border-radius: 4px;"></canvas>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+              <div style="text-align: center;">
+                <input type="range" id="env-attack" min="0.001" max="0.1" step="0.001" value="0.01" class="vertical-slider">
+                <div style="font-size: 0.65rem; color: #888; margin-top: 4px;">A</div>
+                <div style="font-size: 0.6rem; color: #4a9eff;" id="env-attack-val">10ms</div>
+              </div>
+              <div style="text-align: center;">
+                <input type="range" id="env-decay" min="0.001" max="0.1" step="0.001" value="0.02" class="vertical-slider">
+                <div style="font-size: 0.65rem; color: #888; margin-top: 4px;">D</div>
+                <div style="font-size: 0.6rem; color: #4a9eff;" id="env-decay-val">20ms</div>
+              </div>
+              <div style="text-align: center;">
+                <input type="range" id="env-sustain" min="0.001" max="0.1" step="0.001" value="0.02" class="vertical-slider">
+                <div style="font-size: 0.65rem; color: #888; margin-top: 4px;">S</div>
+                <div style="font-size: 0.6rem; color: #4a9eff;" id="env-sustain-val">0.02</div>
+              </div>
+              <div style="text-align: center;">
+                <input type="range" id="env-release" min="0.001" max="0.1" step="0.001" value="0.01" class="vertical-slider">
+                <div style="font-size: 0.65rem; color: #888; margin-top: 4px;">R</div>
+                <div style="font-size: 0.6rem; color: #4a9eff;" id="env-release-val">10ms</div>
+              </div>
+            </div>
           </div>
           <div class="chord-palette" id="chord-palette">
             <button class="chord-btn" data-chord="fundamental" title="(1,1) only">●</button>
@@ -412,6 +1002,176 @@
           </div>
           <p class="hint">Keys 1-9 for presets • Arrows to shift • Space to clear</p>
           <p class="hint">Shift+click or right-click modes to build custom chords</p>
+          
+          <!-- Chord Articulation -->
+          <div class="articulation-section">
+            <div class="articulation-header">
+              <span class="articulation-title">Articulation</span>
+              <div class="articulation-mode-btns">
+                <button class="articulation-mode-btn active" data-mode="instant">Instant</button>
+                <button class="articulation-mode-btn" data-mode="strum">Strum</button>
+                <button class="articulation-mode-btn" data-mode="arpeggio">Arpeggio</button>
+              </div>
+            </div>
+            
+            <div class="articulation-params">
+              <div class="articulation-param">
+                <label>Strum Time</label>
+                <input type="range" id="artic-strum-time" min="20" max="500" value="150">
+                <span class="value" id="artic-strum-time-val">150ms</span>
+              </div>
+              <div class="articulation-param">
+                <label>Brightness</label>
+                <input type="range" id="artic-brightness" min="0" max="100" value="50">
+                <span class="value" id="artic-brightness-val">50%</span>
+              </div>
+              <div class="articulation-param">
+                <label>Arp Rate</label>
+                <input type="range" id="artic-arp-rate" min="60" max="480" value="240">
+                <span class="value" id="artic-arp-rate-val">240 BPM</span>
+              </div>
+              <div class="articulation-param">
+                <label>Humanize</label>
+                <input type="range" id="artic-humanize" min="0" max="100" value="20">
+                <span class="value" id="artic-humanize-val">20%</span>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 8px;">
+              <label style="font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">Direction</label>
+              <div class="direction-btns">
+                <button class="direction-btn active" data-dir="low-high" title="Low to high frequency">↑ Lo→Hi</button>
+                <button class="direction-btn" data-dir="high-low" title="High to low frequency">↓ Hi→Lo</button>
+                <button class="direction-btn" data-dir="in-out" title="Center out">◎ In→Out</button>
+                <button class="direction-btn" data-dir="out-in" title="Edges to center">○ Out→In</button>
+                <button class="direction-btn" data-dir="random" title="Random order">⚄ Random</button>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 4px;">
+              <label style="font-size: 0.65rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">Arp Pattern</label>
+              <div class="direction-btns">
+                <button class="arp-pattern-btn active" data-pattern="up">↑ Up</button>
+                <button class="arp-pattern-btn" data-pattern="down">↓ Down</button>
+                <button class="arp-pattern-btn" data-pattern="up-down">↕ Up-Down</button>
+                <button class="arp-pattern-btn" data-pattern="random">⚄ Rand</button>
+              </div>
+            </div>
+            
+            <div class="articulation-presets">
+              <button class="artic-preset-btn" data-preset="instant">Instant</button>
+              <button class="artic-preset-btn" data-preset="plucky">Plucky</button>
+              <button class="artic-preset-btn" data-preset="soft">Soft</button>
+              <button class="artic-preset-btn" data-preset="strum-up">Strum ↑</button>
+              <button class="artic-preset-btn" data-preset="strum-down">Strum ↓</button>
+              <button class="artic-preset-btn" data-preset="arp-up">Arp ↑</button>
+              <button class="artic-preset-btn" data-preset="arp-updown">Arp ↕</button>
+              <button class="artic-preset-btn" data-preset="scatter">Scatter</button>
+            </div>
+          </div>
+          
+          <!-- Euclidean Rhythm Sequencer -->
+          <div class="euclidean-section">
+            <div class="euclidean-header">
+              <span class="euclidean-title">Euclidean Sequencer</span>
+              <span class="euclidean-notation" id="euc-notation">E(4,16)</span>
+            </div>
+            
+            <div class="euclidean-params">
+              <div class="euclidean-param">
+                <label>Steps</label>
+                <input type="range" id="euc-steps" min="2" max="32" value="16">
+                <span class="value" id="euc-steps-val">16</span>
+              </div>
+              <div class="euclidean-param">
+                <label>Pulses</label>
+                <input type="range" id="euc-pulses" min="0" max="16" value="4">
+                <span class="value" id="euc-pulses-val">4</span>
+              </div>
+              <div class="euclidean-param">
+                <label>Rotate</label>
+                <input type="range" id="euc-rotation" min="0" max="15" value="0">
+                <span class="value" id="euc-rotation-val">0</span>
+              </div>
+              <div class="euclidean-param">
+                <label>BPM</label>
+                <input type="range" id="euc-bpm" min="40" max="200" value="120">
+                <span class="value" id="euc-bpm-val">120</span>
+              </div>
+            </div>
+            
+            <div class="euclidean-steps" id="euc-steps-display">
+              <!-- Steps are generated dynamically -->
+            </div>
+            
+            <div class="euclidean-controls">
+              <button class="euclidean-btn primary" id="euc-play">▶ Play</button>
+              <button class="euclidean-btn" id="euc-stop">⏹ Stop</button>
+              <button class="euclidean-btn" id="euc-reset">↺ Reset</button>
+              <select class="euclidean-chord-select" id="euc-chord">
+                <option value="fundamental">● Fundamental</option>
+                <option value="diagonal">⟋ Diagonal</option>
+                <option value="horizontal">― Horizontal</option>
+                <option value="vertical">| Vertical</option>
+                <option value="cross">+ Cross</option>
+                <option value="square">□ Square</option>
+                <option value="diamond">◇ Diamond</option>
+                <option value="star">✦ Star</option>
+              </select>
+              <select class="euclidean-chord-select" id="euc-preset">
+                <option value="">Preset rhythm...</option>
+                <option value="son-clave">Son Clave E(5,16)</option>
+                <option value="rumba">Rumba E(5,16)+3</option>
+                <option value="tresillo">Tresillo E(3,8)</option>
+                <option value="cinquillo">Cinquillo E(5,8)</option>
+                <option value="four-floor">Four on Floor</option>
+                <option value="backbeat">Backbeat E(2,4)+1</option>
+                <option value="aksak">Aksak E(4,9)</option>
+              </select>
+            </div>
+            
+            <!-- Chord Queue -->
+            <div class="chord-queue-section">
+              <div class="chord-queue-header">
+                <span class="chord-queue-title">Chord Queue</span>
+                <div class="chord-queue-controls">
+                  <select id="euc-chord-select" style="padding: 4px 8px; background: #2a2a3a; border: none; border-radius: 4px; color: #e0e0e0; font-size: 0.7rem;">
+                    <option value="fundamental">Fundamental</option>
+                    <option value="diagonal">Diagonal</option>
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                    <option value="cross">Cross</option>
+                    <option value="square">Square</option>
+                    <option value="diamond">Diamond</option>
+                    <option value="star">Star</option>
+                    <option value="spiral">Spiral</option>
+                    <option value="octave_like">Octave</option>
+                    <option value="fifth_like">Fifth</option>
+                    <option value="all_even">All Even</option>
+                    <option value="all_odd">All Odd</option>
+                    <option value="perimeter">Perimeter</option>
+                  </select>
+                  <button class="euclidean-btn" id="euc-add-chord" title="Add selected chord">+ Add</button>
+                  <button class="euclidean-btn" id="euc-clear-chords" title="Clear queue">Clear</button>
+                </div>
+              </div>
+              <div class="chord-queue-controls" style="margin-bottom: 6px;">
+                <select id="euc-chord-preset" style="padding: 4px 8px; background: #2a2a3a; border: none; border-radius: 4px; color: #e0e0e0; font-size: 0.7rem; width: 100%;">
+                  <option value="">Load progression preset...</option>
+                  <option value="simple">Simple</option>
+                  <option value="symmetric">Symmetric</option>
+                  <option value="geometric">Geometric</option>
+                  <option value="tension">Tension-Release</option>
+                </select>
+              </div>
+              <div class="chord-queue" id="euc-chord-queue">
+                <div class="chord-queue-empty">Select chord → + Add</div>
+              </div>
+            </div>
+            
+            <p class="hint" style="margin-top: 8px;">Click steps to toggle • Each pulse plays next chord in queue</p>
+          </div>
+          
         </div>
         
         <div class="info-panel">
@@ -424,7 +1184,7 @@
           <div class="mode-grid" id="mode-info">
             <!-- Filled dynamically -->
           </div>
-          <p class="hint" style="margin-top: 8px;">n=1..4 (rows) × m=1..4 (cols) • Shift+click to add to chord</p>
+          <p class="hint" style="margin-top: 8px;">n=1..6 (rows) × m=1..6 (cols) • Shift+click to add to chord</p>
         </div>
         
         <div id="status">Click "Start Audio" to begin</div>
@@ -439,12 +1199,13 @@
   
   <script type="module" src="src/main.js"></script>
   <script>
-    // Populate mode frequency grid
+    // Populate mode frequency grid (6×6 = 36 modes)
     const f0 = 200;
     const sqrt2 = Math.sqrt(2);
+    const mMax = 6;
     const grid = document.getElementById('mode-info');
-    for (let n = 1; n <= 4; n++) {
-      for (let m = 1; m <= 4; m++) {
+    for (let n = 1; n <= mMax; n++) {
+      for (let m = 1; m <= mMax; m++) {
         const freq = f0 * Math.sqrt(m*m + n*n) / sqrt2;
         const cell = document.createElement('div');
         cell.className = 'mode-cell';
