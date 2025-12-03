@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modal Harmonic Synthesizer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      font-weight: 300;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      font-size: 0.9rem;
+      color: #888;
+    }
+    
+    .main-area {
+      display: flex;
+      flex: 1;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .canvas-container {
+      flex: 2;
+      min-width: 400px;
+      position: relative;
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    #membrane-canvas {
+      width: 100%;
+      height: 500px;
+      display: block;
+      cursor: crosshair;
+    }
+    
+    #start-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 40px;
+      font-size: 1.2rem;
+      background: linear-gradient(135deg, #4a9eff, #7c4dff);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    #start-button:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+      box-shadow: 0 8px 30px rgba(74, 158, 255, 0.4);
+    }
+    
+    .controls {
+      flex: 1;
+      min-width: 280px;
+      background: #151520;
+      border-radius: 12px;
+      padding: 20px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .control-section {
+      margin-bottom: 24px;
+    }
+    
+    .control-section h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .control-row label {
+      flex: 0 0 80px;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+    
+    .control-row input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #2a2a3a;
+    }
+    
+    .control-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4a9eff;
+      cursor: pointer;
+    }
+    
+    .control-row .value {
+      flex: 0 0 50px;
+      text-align: right;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #4a9eff;
+    }
+    
+    .control-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #4a9eff;
+    }
+    
+    .control-row select {
+      flex: 1;
+      padding: 6px 10px;
+      background: #2a2a3a;
+      border: none;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 0.9rem;
+    }
+    
+    .control-row button {
+      padding: 6px 14px;
+      background: #2a2a3a;
+      border: none;
+      border-radius: 4px;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    
+    .control-row button:hover {
+      background: #3a3a4a;
+    }
+    
+    #status {
+      text-align: center;
+      padding: 12px;
+      font-size: 0.9rem;
+      color: #4a9eff;
+      background: rgba(74, 158, 255, 0.1);
+      border-radius: 6px;
+      margin-top: auto;
+    }
+    
+    .info-panel {
+      margin-top: 20px;
+      padding: 16px;
+      background: #1a1a25;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #888;
+    }
+    
+    .info-panel h4 {
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    
+    .info-panel p {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 12px;
+    }
+    
+    .mode-cell {
+      aspect-ratio: 1;
+      background: #2a2a3a;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-family: monospace;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      user-select: none;
+    }
+    
+    .mode-cell:hover {
+      background: #3a4a5a;
+      transform: scale(1.05);
+    }
+    
+    .mode-cell:active {
+      background: #4a9eff;
+      transform: scale(0.95);
+    }
+    
+    .chord-palette {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin: 12px 0;
+    }
+    
+    .chord-btn {
+      aspect-ratio: 1;
+      background: #2a2a3a;
+      border: none;
+      border-radius: 6px;
+      color: #aaa;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .chord-btn:hover {
+      background: #3a4a5a;
+      color: #fff;
+      transform: scale(1.05);
+    }
+    
+    .chord-btn:active {
+      background: #4a9eff;
+      transform: scale(0.95);
+    }
+    
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    
+    .hint {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 4px;
+    }
+    
+    @media (max-width: 768px) {
+      .main-area {
+        flex-direction: column;
+      }
+      
+      .canvas-container {
+        min-width: 100%;
+      }
+      
+      #membrane-canvas {
+        height: 350px;
+      }
+      
+      .controls {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Modal Harmonic Synthesizer</h1>
+      <p class="subtitle">Geometric music theory on a vibrating membrane</p>
+    </header>
+    
+    <div class="main-area">
+      <div class="canvas-container">
+        <canvas id="membrane-canvas"></canvas>
+        <button id="start-button">▶ Start Audio</button>
+      </div>
+      
+      <div class="controls">
+        <div class="control-section">
+          <h3>Audio</h3>
+          <div class="control-row">
+            <label>Gain</label>
+            <input type="range" id="gain-slider" min="0" max="0.2" step="0.005" value="0.05">
+            <span class="value" id="gain-value">0.05</span>
+          </div>
+          <div class="control-row">
+            <label>Decay</label>
+            <input type="range" id="decay-slider" min="0.5" max="5" step="0.1" value="2">
+            <span class="value" id="decay-value">2.0s</span>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Microphone Position</h3>
+          <div class="control-row">
+            <label>Mic X</label>
+            <input type="range" id="mic-x-slider" min="0.05" max="0.95" step="0.01" value="0.3">
+            <span class="value" id="mic-x-value">0.30</span>
+          </div>
+          <div class="control-row">
+            <label>Mic Y</label>
+            <input type="range" id="mic-y-slider" min="0.05" max="0.95" step="0.01" value="0.4">
+            <span class="value" id="mic-y-value">0.40</span>
+          </div>
+          <p class="hint">Move mic to change which modes you hear</p>
+        </div>
+        
+        <div class="control-section">
+          <h3>Visualization</h3>
+          <div class="control-row">
+            <label>Height</label>
+            <input type="range" id="height-slider" min="2" max="20" step="0.5" value="8">
+            <span class="value" id="height-value">8</span>
+          </div>
+          <div class="control-row">
+            <label>Smoothing</label>
+            <input type="range" id="smoothing-slider" min="0" max="0.95" step="0.05" value="0.7">
+            <span class="value" id="smoothing-value">0.7</span>
+          </div>
+          <div class="control-row">
+            <label>Grid</label>
+            <select id="grid-select">
+              <option value="32">32×32 (fast)</option>
+              <option value="64" selected>64×64 (default)</option>
+              <option value="96">96×96 (detailed)</option>
+              <option value="128">128×128 (high)</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label>Auto-rotate</label>
+            <input type="checkbox" id="rotate-toggle" checked>
+            <button id="reset-camera">Reset View</button>
+          </div>
+          <p class="hint">Drag to orbit • Click to strike • Scroll to zoom</p>
+        </div>
+        
+        <div class="control-section">
+          <h3>Cymatics Mode</h3>
+          <div class="control-row">
+            <label>Drive</label>
+            <input type="checkbox" id="drive-toggle">
+            <span style="color: #888; font-size: 0.85rem;">Continuous excitation</span>
+          </div>
+          <div class="control-row">
+            <label>Freq</label>
+            <input type="range" id="drive-freq-slider" min="50" max="1200" step="1" value="200">
+            <span class="value" id="drive-freq-value">200 Hz</span>
+          </div>
+          <div class="control-row">
+            <label>Amplitude</label>
+            <input type="range" id="drive-amp-slider" min="0.001" max="0.05" step="0.001" value="0.01">
+            <span class="value" id="drive-amp-value">0.01</span>
+          </div>
+          <p class="hint">Sweep frequency to find resonances!</p>
+        </div>
+        
+        <div class="control-section">
+          <h3>Modal Chords</h3>
+          <div class="control-row">
+            <label>Sustain</label>
+            <input type="checkbox" id="chord-sustain">
+            <button id="clear-chord">Clear</button>
+          </div>
+          <div class="chord-palette" id="chord-palette">
+            <button class="chord-btn" data-chord="fundamental" title="(1,1) only">●</button>
+            <button class="chord-btn" data-chord="diagonal" title="Diagonal: (1,1)→(4,4)">⟋</button>
+            <button class="chord-btn" data-chord="horizontal" title="Horizontal row">―</button>
+            <button class="chord-btn" data-chord="vertical" title="Vertical column">|</button>
+            <button class="chord-btn" data-chord="cross" title="Cross pattern">+</button>
+            <button class="chord-btn" data-chord="square" title="2×2 square">□</button>
+            <button class="chord-btn" data-chord="diamond" title="Diamond shape">◇</button>
+            <button class="chord-btn" data-chord="star" title="Star/corners + center">✦</button>
+            <button class="chord-btn" data-chord="grid" title="4 corners">⊞</button>
+          </div>
+          <p class="hint">Keys 1-9 for presets • Arrows to shift • Space to clear</p>
+          <p class="hint">Shift+click or right-click modes to build custom chords</p>
+        </div>
+        
+        <div class="info-panel">
+          <h4>Modal Harmony Theory</h4>
+          <p>Each mode (m,n) is a <strong>note</strong> with both frequency and geometry.</p>
+          <p><strong>Chords</strong> = sets of modes = superpositions of spatial patterns.</p>
+          <p><strong>Voice leading</strong> = smooth paths through modal amplitude space.</p>
+          
+          <h4 style="margin-top: 16px;">Mode lattice (Hz) — click to play!</h4>
+          <div class="mode-grid" id="mode-info">
+            <!-- Filled dynamically -->
+          </div>
+          <p class="hint" style="margin-top: 8px;">n=1..4 (rows) × m=1..4 (cols) • Shift+click to add to chord</p>
+        </div>
+        
+        <div id="status">Click "Start Audio" to begin</div>
+      </div>
+    </div>
+    
+    <footer>
+      Modal synthesis with WebGL + WebAudio | 
+      <a href="#" style="color: #4a9eff;" onclick="document.querySelector('.info-panel').scrollIntoView({behavior:'smooth'});return false;">Mode frequencies</a>
+    </footer>
+  </div>
+  
+  <script type="module" src="src/main.js"></script>
+  <script>
+    // Populate mode frequency grid
+    const f0 = 200;
+    const sqrt2 = Math.sqrt(2);
+    const grid = document.getElementById('mode-info');
+    for (let n = 1; n <= 4; n++) {
+      for (let m = 1; m <= 4; m++) {
+        const freq = f0 * Math.sqrt(m*m + n*n) / sqrt2;
+        const cell = document.createElement('div');
+        cell.className = 'mode-cell';
+        cell.textContent = Math.round(freq);
+        cell.title = `Mode (${m},${n}): ${freq.toFixed(1)} Hz\nClick to excite!`;
+        cell.dataset.m = m;
+        cell.dataset.n = n;
+        grid.appendChild(cell);
+      }
+    }
+  </script>
+</body>
+</html>
