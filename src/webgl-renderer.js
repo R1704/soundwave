@@ -68,6 +68,20 @@ export class WebGLRenderer {
     this.riseRate = 0.4;         // How fast visualization rises (higher = faster)
     this.fallRate = 0.92;        // How fast visualization falls (higher = slower decay)
     
+    // Visualization mode: 'normal', 'chladni', 'phase', 'energy'
+    this.vizMode = 'normal';
+    
+    // History for ghost trails
+    this.historyLength = 8;      // Number of history frames
+    this.amplitudeHistory = [];
+    for (let i = 0; i < this.historyLength; i++) {
+      this.amplitudeHistory.push(new Float32Array(64));
+    }
+    this.historyIndex = 0;
+    
+    // Previous amplitudes for phase/velocity calculation
+    this.prevAmplitudes = new Float32Array(64);
+    
     // Animation
     this.autoRotate = true;
     this.autoRotateSpeed = 0.15;
@@ -223,79 +237,165 @@ ${inVar} vec2 vUV;
 
 uniform vec3 uLightDir;
 uniform vec3 uCameraPos;
+uniform int uVizMode;        // 0=normal, 1=chladni, 2=phase, 3=energy
+uniform float uVelocity;     // Height velocity for phase/energy modes
+uniform float uTime;
 
 ${fragOutDecl}
+
+// HSV to RGB conversion for phase visualization
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
 
 void main() {
   vec3 normal = normalize(vNormal);
   vec3 viewDir = normalize(uCameraPos - vPosition);
   
-  // Hemisphere lighting - smooth blend between sky and ground colors
-  // This ensures ALL surfaces get some light regardless of orientation
-  float hemisphereBlend = normal.z * 0.5 + 0.5; // 0 = facing down, 1 = facing up
-  vec3 skyColor = vec3(0.9, 0.95, 1.0);   // Bright sky
-  vec3 groundColor = vec3(0.4, 0.45, 0.6); // Reflected ground light
-  vec3 hemisphereLight = mix(groundColor, skyColor, hemisphereBlend);
-  
-  // Key light (main directional)
-  vec3 lightDir = normalize(uLightDir);
-  float keyLight = max(dot(normal, lightDir), 0.0);
-  
-  // Fill light from camera direction (always visible parts get extra light)
-  float fillLight = max(dot(normal, viewDir), 0.0) * 0.3;
-  
-  // Wrap lighting - extends diffuse around edges (softer shadows)
-  float wrapLight = (dot(normal, lightDir) + 0.5) / 1.5;
-  wrapLight = max(wrapLight, 0.0) * 0.4;
-  
-  vec3 halfDir = normalize(lightDir + viewDir);
-  float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
-  
-  // Height-based coloring
+  // Height-based values
   float h = clamp(vHeight / 1.0, -1.0, 1.0);
   float absH = abs(h);
   
-  // Vibrant color palette
   vec3 color;
-  if (h > 0.0) {
-    // Peaks: aqua -> cyan -> white -> gold -> coral
-    if (h < 0.25) {
-      color = mix(vec3(0.3, 0.55, 0.7), vec3(0.4, 0.9, 1.0), h / 0.25);
-    } else if (h < 0.5) {
-      color = mix(vec3(0.4, 0.9, 1.0), vec3(0.95, 1.0, 1.0), (h - 0.25) / 0.25);
-    } else if (h < 0.75) {
-      color = mix(vec3(1.0, 0.95, 0.8), vec3(1.0, 0.7, 0.3), (h - 0.5) / 0.25);
+  
+  // ===== CHLADNI MODE: Highlight nodal lines =====
+  if (uVizMode == 1) {
+    // Nodal regions are where height stays near zero
+    float nodeIntensity = 1.0 - smoothstep(0.0, 0.15, absH);
+    
+    // Bright lines at nodes, dark elsewhere
+    vec3 nodeColor = vec3(1.0, 0.95, 0.7);  // Warm white/gold for nodes
+    vec3 antiNodeColor = vec3(0.1, 0.12, 0.2); // Dark blue for antinodes
+    
+    // Add subtle height coloring to antinodes
+    if (h > 0.0) {
+      antiNodeColor = mix(antiNodeColor, vec3(0.2, 0.1, 0.15), absH);
     } else {
-      color = mix(vec3(1.0, 0.7, 0.3), vec3(1.0, 0.4, 0.3), (h - 0.75) / 0.25);
+      antiNodeColor = mix(antiNodeColor, vec3(0.1, 0.1, 0.25), absH);
     }
-  } else {
-    // Troughs: slate -> indigo -> purple -> magenta
-    float nh = -h;
-    if (nh < 0.3) {
-      color = mix(vec3(0.35, 0.45, 0.6), vec3(0.4, 0.35, 0.7), nh / 0.3);
-    } else if (nh < 0.6) {
-      color = mix(vec3(0.4, 0.35, 0.7), vec3(0.55, 0.3, 0.65), (nh - 0.3) / 0.3);
+    
+    color = mix(antiNodeColor, nodeColor, nodeIntensity * nodeIntensity);
+    
+    // Add glow effect around nodal lines
+    float glow = exp(-absH * 8.0) * 0.5;
+    color += vec3(0.8, 0.7, 0.4) * glow;
+  }
+  
+  // ===== PHASE MODE: Rainbow based on oscillation phase =====
+  else if (uVizMode == 2) {
+    // Compute phase from height and velocity (atan2 gives -π to π)
+    float phase = atan(uVelocity * 5.0, h) / 3.14159 * 0.5 + 0.5; // 0 to 1
+    
+    // Add time-based rotation for animation effect
+    phase = fract(phase + uTime * 0.1);
+    
+    // Rainbow color from phase
+    float saturation = 0.7 + absH * 0.3; // More saturated at extremes
+    float value = 0.5 + absH * 0.5;      // Brighter at extremes
+    color = hsv2rgb(vec3(phase, saturation, value));
+    
+    // Nodal regions are white
+    float nodeBlend = exp(-absH * 10.0);
+    color = mix(color, vec3(0.9), nodeBlend * 0.5);
+  }
+  
+  // ===== ENERGY MODE: Kinetic + potential energy heat map =====
+  else if (uVizMode == 3) {
+    // Simplified energy: E ∝ h² + v²
+    float energy = h * h + uVelocity * uVelocity * 25.0;
+    energy = clamp(energy, 0.0, 1.0);
+    
+    // Heat map: black -> purple -> red -> orange -> yellow -> white
+    vec3 c0 = vec3(0.0, 0.0, 0.0);      // 0.0
+    vec3 c1 = vec3(0.3, 0.0, 0.5);      // 0.2
+    vec3 c2 = vec3(0.8, 0.1, 0.1);      // 0.4
+    vec3 c3 = vec3(1.0, 0.5, 0.0);      // 0.6
+    vec3 c4 = vec3(1.0, 0.9, 0.2);      // 0.8
+    vec3 c5 = vec3(1.0, 1.0, 1.0);      // 1.0
+    
+    if (energy < 0.2) {
+      color = mix(c0, c1, energy / 0.2);
+    } else if (energy < 0.4) {
+      color = mix(c1, c2, (energy - 0.2) / 0.2);
+    } else if (energy < 0.6) {
+      color = mix(c2, c3, (energy - 0.4) / 0.2);
+    } else if (energy < 0.8) {
+      color = mix(c3, c4, (energy - 0.6) / 0.2);
     } else {
-      color = mix(vec3(0.55, 0.3, 0.65), vec3(0.7, 0.3, 0.55), (nh - 0.6) / 0.4);
+      color = mix(c4, c5, (energy - 0.8) / 0.2);
     }
   }
   
-  // Intensity boost at peaks/troughs
-  float intensity = 1.0 + absH * 0.3;
-  color *= intensity;
+  // ===== NORMAL MODE: Original height-based coloring =====
+  else {
+    if (h > 0.0) {
+      // Peaks: aqua -> cyan -> white -> gold -> coral
+      if (h < 0.25) {
+        color = mix(vec3(0.3, 0.55, 0.7), vec3(0.4, 0.9, 1.0), h / 0.25);
+      } else if (h < 0.5) {
+        color = mix(vec3(0.4, 0.9, 1.0), vec3(0.95, 1.0, 1.0), (h - 0.25) / 0.25);
+      } else if (h < 0.75) {
+        color = mix(vec3(1.0, 0.95, 0.8), vec3(1.0, 0.7, 0.3), (h - 0.5) / 0.25);
+      } else {
+        color = mix(vec3(1.0, 0.7, 0.3), vec3(1.0, 0.4, 0.3), (h - 0.75) / 0.25);
+      }
+    } else {
+      // Troughs: slate -> indigo -> purple -> magenta
+      float nh = -h;
+      if (nh < 0.3) {
+        color = mix(vec3(0.35, 0.45, 0.6), vec3(0.4, 0.35, 0.7), nh / 0.3);
+      } else if (nh < 0.6) {
+        color = mix(vec3(0.4, 0.35, 0.7), vec3(0.55, 0.3, 0.65), (nh - 0.3) / 0.3);
+      } else {
+        color = mix(vec3(0.55, 0.3, 0.65), vec3(0.7, 0.3, 0.55), (nh - 0.6) / 0.4);
+      }
+    }
+    
+    // Intensity boost at peaks/troughs
+    float intensity = 1.0 + absH * 0.3;
+    color *= intensity;
+  }
   
-  // Edge fade (softer, higher minimum)
+  // ===== COMMON LIGHTING (applied to all modes) =====
+  
+  // Hemisphere lighting
+  float hemisphereBlend = normal.z * 0.5 + 0.5;
+  vec3 skyColor = vec3(0.9, 0.95, 1.0);
+  vec3 groundColor = vec3(0.4, 0.45, 0.6);
+  vec3 hemisphereLight = mix(groundColor, skyColor, hemisphereBlend);
+  
+  // Key light
+  vec3 lightDir = normalize(uLightDir);
+  float keyLight = max(dot(normal, lightDir), 0.0);
+  
+  // Fill light
+  float fillLight = max(dot(normal, viewDir), 0.0) * 0.3;
+  
+  // Wrap lighting
+  float wrapLight = (dot(normal, lightDir) + 0.5) / 1.5;
+  wrapLight = max(wrapLight, 0.0) * 0.4;
+  
+  // Specular (reduced for Chladni mode)
+  vec3 halfDir = normalize(lightDir + viewDir);
+  float specPower = (uVizMode == 1) ? 64.0 : 32.0;
+  float spec = pow(max(dot(normal, halfDir), 0.0), specPower);
+  
+  // Edge fade
   float edge = smoothstep(0.0, 0.06, vUV.x) * smoothstep(0.0, 0.06, 1.0 - vUV.x) *
                smoothstep(0.0, 0.06, vUV.y) * smoothstep(0.0, 0.06, 1.0 - vUV.y);
   float edgeFactor = 0.7 + 0.3 * edge;
   
-  // Combine lighting - high base level ensures nothing is too dark
-  float totalLight = 0.5 + keyLight * 0.35 + fillLight + wrapLight;
+  // Lighting intensity (less for Chladni to preserve contrast)
+  float lightMult = (uVizMode == 1) ? 0.6 : 1.0;
+  float totalLight = 0.5 + (keyLight * 0.35 + fillLight + wrapLight) * lightMult;
   
   vec3 litColor = color * hemisphereLight * totalLight * edgeFactor;
   
-  // Specular
-  vec3 specular = vec3(1.0, 0.98, 0.95) * spec * 0.5;
+  // Specular (reduced for special modes)
+  float specMult = (uVizMode == 1 || uVizMode == 3) ? 0.2 : 0.5;
+  vec3 specular = vec3(1.0, 0.98, 0.95) * spec * specMult;
   
   // Rim/Fresnel - bright edge highlighting
   float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 2.0);
@@ -350,6 +450,9 @@ void main() {
     this.uniforms.amplitudes = gl.getUniformLocation(this.program, 'uAmp');
     this.uniforms.heightScale = gl.getUniformLocation(this.program, 'uHeightScale');
     this.uniforms.normFactor = gl.getUniformLocation(this.program, 'uNormFactor');
+    this.uniforms.vizMode = gl.getUniformLocation(this.program, 'uVizMode');
+    this.uniforms.velocity = gl.getUniformLocation(this.program, 'uVelocity');
+    this.uniforms.time = gl.getUniformLocation(this.program, 'uTime');
     
     console.log('Shader initialized successfully, WebGL2:', this.isWebGL2);
   }
@@ -711,6 +814,17 @@ void main() {
     return null;
   }
   
+  /**
+   * Set visualization mode
+   * @param {string} mode - 'normal', 'chladni', 'phase', or 'energy'
+   */
+  setVizMode(mode) {
+    const validModes = ['normal', 'chladni', 'phase', 'energy'];
+    if (validModes.includes(mode)) {
+      this.vizMode = mode;
+    }
+  }
+  
   resetCamera() {
     this.cameraDistance = 3.5;
     this.cameraTheta = 0.5;
@@ -769,6 +883,20 @@ void main() {
     if (this.uniforms.heightScale) gl.uniform1f(this.uniforms.heightScale, this.heightScale);
     if (this.uniforms.normFactor) gl.uniform1f(this.uniforms.normFactor, 1.0 / Math.max(this.visualPeak, 0.001));
     if (this.uniforms.amplitudes) gl.uniform1fv(this.uniforms.amplitudes, this.smoothedAmplitudes.subarray(0, 36));
+    
+    // Visualization mode uniforms
+    const vizModeIndex = { 'normal': 0, 'chladni': 1, 'phase': 2, 'energy': 3 }[this.vizMode] || 0;
+    if (this.uniforms.vizMode) gl.uniform1i(this.uniforms.vizMode, vizModeIndex);
+    if (this.uniforms.time) gl.uniform1f(this.uniforms.time, time);
+    
+    // Compute average velocity (difference from previous frame) for phase/energy modes
+    let avgVelocity = 0;
+    for (let i = 0; i < 36; i++) {
+      avgVelocity += Math.abs(this.smoothedAmplitudes[i] - this.prevAmplitudes[i]);
+      this.prevAmplitudes[i] = this.smoothedAmplitudes[i];
+    }
+    avgVelocity /= 36;
+    if (this.uniforms.velocity) gl.uniform1f(this.uniforms.velocity, avgVelocity * 10);
     
     // Bind position buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);

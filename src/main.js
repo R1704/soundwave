@@ -16,10 +16,12 @@ import * as Harmony from './modal-harmony.js';
 import { ChordSequencer } from './sequencer.js';
 import { EuclideanSequencer } from './euclidean-sequencer.js';
 import { ChordArticulator, ArticulationMode, Direction, ArpeggioPattern } from './chord-articulator.js';
+import { SpacetimeSculpture } from './spacetime-sculpture.js';
 
 class ModalHarmonicApp {
   constructor() {
     this.canvas = document.getElementById('membrane-canvas');
+    this.sculptureCanvas = document.getElementById('sculpture-canvas');
     this.startButton = document.getElementById('start-button');
     this.statusEl = document.getElementById('status');
     
@@ -45,6 +47,10 @@ class ModalHarmonicApp {
     
     // Articulator
     this.articulator = null;
+    
+    // Spacetime sculpture
+    this.sculpture = null;
+    this.sculptureVisible = false;
     
     this.setupEventListeners();
   }
@@ -103,11 +109,130 @@ class ModalHarmonicApp {
       if (this.renderer) this.renderer.autoRotate = e.target.checked;
     });
     
+    document.getElementById('viz-mode-select')?.addEventListener('change', (e) => {
+      if (this.renderer) this.renderer.setVizMode(e.target.value);
+    });
+    
     document.getElementById('reset-camera')?.addEventListener('click', () => {
       if (this.renderer) {
         this.renderer.resetCamera();
         document.getElementById('rotate-toggle').checked = true;
       }
+    });
+    
+    // Spacetime sculpture controls
+    document.getElementById('sculpture-toggle')?.addEventListener('change', (e) => {
+      this.sculptureVisible = e.target.checked;
+      this.updateSculptureVisibility();
+    });
+    
+    document.getElementById('sculpture-clear')?.addEventListener('click', () => {
+      if (this.sculpture) {
+        this.sculpture.clear();
+        this.setStatus('Sculpture cleared');
+      }
+    });
+    
+    document.getElementById('sculpture-export')?.addEventListener('click', () => {
+      if (this.sculpture) {
+        this.sculpture.exportSTL();
+        this.setStatus('Exported STL file');
+      }
+    });
+    
+    document.getElementById('sculpture-mode-select')?.addEventListener('change', (e) => {
+      if (this.sculpture) {
+        this.sculpture.renderMode = e.target.value;
+        this.sculpture.geometryDirty = true;
+        // Show/hide point size control based on mode
+        const pointsizeRow = document.getElementById('pointsize-row');
+        if (pointsizeRow) {
+          pointsizeRow.style.display = e.target.value === 'points' ? 'flex' : 'none';
+        }
+        // Show/hide particle params panel when particles mode selected
+        const particleParams = document.getElementById('particle-params');
+        if (particleParams) {
+          particleParams.style.display = e.target.value === 'particles' ? 'block' : 'none';
+        }
+      }
+    });
+    
+    document.getElementById('sculpture-threshold')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('sculpture-threshold-value').textContent = val.toFixed(2);
+      if (this.sculpture) {
+        this.sculpture.nodalThreshold = val;
+        this.sculpture.geometryDirty = true;
+      }
+    });
+    
+    document.getElementById('sculpture-pointsize')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('sculpture-pointsize-value').textContent = val.toFixed(1);
+      if (this.sculpture) this.sculpture.pointSize = val;
+    });
+    
+    document.getElementById('sculpture-opacity')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('sculpture-opacity-value').textContent = val.toFixed(1);
+      if (this.sculpture) this.sculpture.sculptureOpacity = val;
+    });
+    
+    document.getElementById('sculpture-record')?.addEventListener('change', (e) => {
+      if (this.sculpture) this.sculpture.isRecording = e.target.checked;
+    });
+    
+    // Particle physics parameter controls
+    document.getElementById('particle-count')?.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      document.getElementById('particle-count-value').textContent = val;
+      if (this.sculpture) this.sculpture.setParticleCount(val);
+    });
+    
+    document.getElementById('particle-force')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-force-value').textContent = val.toFixed(2);
+      if (this.sculpture) this.sculpture.setParticleForceStrength(val);
+    });
+    
+    document.getElementById('particle-damping')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-damping-value').textContent = val.toFixed(2);
+      if (this.sculpture) this.sculpture.setParticleDamping(val);
+    });
+    
+    document.getElementById('particle-noise')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-noise-value').textContent = val.toFixed(3);
+      if (this.sculpture) this.sculpture.setParticleNoise(val);
+    });
+    
+    document.getElementById('particle-edge-repel')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-edge-repel-value').textContent = val.toFixed(3);
+      if (this.sculpture) this.sculpture.setParticleEdgeRepel(val);
+    });
+    
+    document.getElementById('particle-corner-repel')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-corner-repel-value').textContent = val.toFixed(3);
+      if (this.sculpture) this.sculpture.setParticleCornerRepel(val);
+    });
+    
+    document.getElementById('particle-shake')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-shake-value').textContent = val.toFixed(3);
+      if (this.sculpture) this.sculpture.setParticleShakeStrength(val);
+    });
+    
+    document.getElementById('particle-size')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('particle-size-value').textContent = val.toFixed(1);
+      if (this.sculpture) this.sculpture.setParticleSize(val);
+    });
+    
+    document.getElementById('particle-reset')?.addEventListener('click', () => {
+      if (this.sculpture) this.sculpture.resetParticles();
     });
     
     // Cymatics drive controls
@@ -1337,6 +1462,11 @@ class ModalHarmonicApp {
       // Initialize ADSR display
       this.updateEnvelope();
       
+      // Initialize spacetime sculpture with higher resolution for detailed nodal lines
+      if (this.sculptureCanvas) {
+        this.sculpture = new SpacetimeSculpture(this.sculptureCanvas, 64, 200);
+      }
+      
       this.isRunning = true;
       this.startButton.style.display = 'none';
       this.setStatus('Drag to orbit • Click to strike • Keys 1-9 for chords');
@@ -1364,10 +1494,45 @@ class ModalHarmonicApp {
     // Pass amplitudes directly to GPU - no CPU height field computation
     if (this.amplitudes) {
       this.renderer.updateAmplitudes(this.amplitudes);
+      
+      // Feed amplitudes to sculpture for history recording
+      if (this.sculpture && this.sculpture.isRecording) {
+        this.sculpture.addAmplitudeSlice(this.amplitudes);
+      }
     }
     
-    this.renderer.render(time);
+    // Render membrane or sculpture depending on visibility
+    if (this.sculptureVisible && this.sculpture) {
+      this.sculpture.render(time);
+    } else {
+      this.renderer.render(time);
+    }
+    
     requestAnimationFrame((t) => this.renderLoop(t));
+  }
+  
+  updateSculptureVisibility() {
+    const membraneCanvas = this.canvas;
+    const sculptureCanvas = this.sculptureCanvas;
+    
+    if (this.sculptureVisible) {
+      membraneCanvas.style.display = 'none';
+      sculptureCanvas.style.display = 'block';
+      if (this.sculpture) {
+        this.sculpture.resize();
+        const slices = this.sculpture.totalSlices;
+        const points = this.sculpture.vertexCount;
+        if (slices < 2) {
+          this.setStatus('Recording patterns... play some sounds! (0 slices)');
+        } else {
+          this.setStatus(`Sculpture: ${slices} time slices, ${points} points`);
+        }
+      }
+    } else {
+      membraneCanvas.style.display = 'block';
+      sculptureCanvas.style.display = 'none';
+      this.setStatus('Drag to orbit • Click to strike • Keys 1-9 for chords');
+    }
   }
   
   setStatus(msg) {

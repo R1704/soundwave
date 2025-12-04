@@ -10,6 +10,8 @@
 6. [Articulation System](#articulation-system)
 7. [Euclidean Sequencer](#euclidean-sequencer)
 8. [WebGL Visualization](#webgl-visualization)
+9. [Spacetime Sculpture](#spacetime-sculpture)
+10. [Visualization Modes](#visualization-modes)
 9. [User Interface](#user-interface)
 10. [API Reference](#api-reference)
 
@@ -42,7 +44,8 @@ src/
 ├── chord-articulator.js # Strum and arpeggio articulation
 ├── euclidean-sequencer.js # Bjorklund rhythm algorithm
 ├── sequencer.js         # Legacy step sequencer
-└── webgl-renderer.js    # GPU-based 3D rendering
+├── webgl-renderer.js    # GPU-based 3D membrane rendering
+└── spacetime-sculpture.js # 3D Chladni sculpture (points, contours, particles, ribbons)
 ```
 
 ### Data Flow
@@ -597,5 +600,201 @@ See [OPTIMIZATIONS.md](OPTIMIZATIONS.md) for planned improvements:
 - Circular membrane support (Bessel functions)
 - MIDI input
 - Recording/export
+
+---
+
+## Spacetime Sculpture
+
+### SpacetimeSculpture (`spacetime-sculpture.js`)
+
+3D visualization that extrudes Chladni patterns through time, creating sculptures from sound.
+
+#### Concept
+
+When a membrane vibrates, certain regions (nodal lines) remain stationary. By capturing these patterns through time and stacking them in 3D space, we create a "spacetime sculpture" - a frozen representation of how the wave patterns evolve.
+
+#### Architecture
+
+```javascript
+class SpacetimeSculpture {
+  // Circular buffer for time history
+  amplitudeHistory: Float32Array  // [maxSlices × gridSize × gridSize]
+  maxSlices: 200                  // Time depth
+  currentSlice: 0                 // Write head
+  
+  // Render modes
+  renderMode: 'contours' | 'points' | 'particles' | 'ribbons'
+  
+  // Particle system
+  particles: Float32Array         // [particleCount × 4] (x, y, vx, vy)
+  particleCount: 2000
+}
+```
+
+#### Render Modes
+
+| Mode | Description | Technique |
+|------|-------------|-----------|
+| **Points** | Scattered points at nodal regions | Filter by amplitude < threshold |
+| **Contours** | Precise nodal lines | Marching squares zero-crossing detection |
+| **Particles** | Simulated sand/particles | Physics simulation toward nodal lines |
+| **Ribbons** | Solid surfaces between slices | Triangle strips connecting contours |
+
+#### Marching Squares Algorithm
+
+Extracts precise zero-crossing contour lines:
+
+```javascript
+// For each cell in grid:
+// 1. Sample corners
+const v0 = grid[y][x];
+const v1 = grid[y][x+1];
+const v2 = grid[y+1][x+1];
+const v3 = grid[y+1][x];
+
+// 2. Build case index from sign
+let caseIndex = 0;
+if (v0 > 0) caseIndex |= 1;
+if (v1 > 0) caseIndex |= 2;
+if (v2 > 0) caseIndex |= 4;
+if (v3 > 0) caseIndex |= 8;
+
+// 3. Look up edge intersections from 16-case table
+const edges = MARCHING_SQUARES_TABLE[caseIndex];
+
+// 4. Interpolate exact crossing points
+```
+
+#### Particle Physics
+
+Particles simulate sand on a Chladni plate:
+
+```javascript
+updateParticles(amplitudeGrid) {
+  for (particle of particles) {
+    // Sample amplitude gradient at particle position
+    const gradient = sampleGradient(amplitudeGrid, particle.x, particle.y);
+    
+    // Apply force toward lower amplitude (nodal regions)
+    particle.vx += gradient.x * forceStrength;
+    particle.vy += gradient.y * forceStrength;
+    
+    // Edge repulsion (boundary is always zero - not real nodal line)
+    if (nearEdge(particle)) {
+      particle.v += pushTowardCenter();
+    }
+    
+    // Apply damping and noise
+    particle.v *= damping;
+    particle.v += randomNoise();
+    
+    // Update position
+    particle.position += particle.v;
+  }
+}
+```
+
+#### Boundary Handling
+
+The membrane has **fixed boundary conditions** - edges are clamped and always have zero amplitude. This creates a "fake" nodal region at all boundaries. The sculpture handles this by:
+
+1. **15% margin exclusion** - Ignores outer 15% of grid
+2. **Edge repulsion** - Particles are pushed away from boundaries
+3. **Corner repulsion** - Extra force from corners
+4. **Energy shake** - On new sounds, particles get velocity burst to redistribute
+
+#### STL Export
+
+Exports sculpture geometry for 3D printing:
+
+```javascript
+exportSTL() {
+  // Generate triangle mesh from point cloud
+  // Write binary STL format
+  // Trigger browser download
+}
+```
+
+---
+
+## Visualization Modes
+
+### Membrane Visualization Modes
+
+The membrane renderer (`webgl-renderer.js`) supports multiple visualization styles:
+
+#### Normal (Height)
+Default mode - colors based on displacement height.
+- Peaks: Cyan → White → Orange
+- Troughs: Slate → Indigo → Purple
+
+#### Chladni (Nodal Lines)
+Highlights regions of zero displacement - like sand patterns on a vibrating plate.
+- Dark blue: Nodal lines (stationary)
+- Bright: Antinodes (maximum motion)
+
+```glsl
+// In fragment shader
+float nodal = 1.0 - smoothstep(0.0, nodalThreshold, abs(height));
+color = mix(antinodeColor, nodalColor, nodal);
+```
+
+#### Phase (Rainbow)
+Colors based on oscillation phase angle (0-360°).
+- Computed from current + previous frame
+- Creates stunning interference patterns
+- Hue cycles through rainbow
+
+```glsl
+// Phase from height change
+float velocity = height - prevHeight;
+float phase = atan(velocity, height);
+float hue = (phase + PI) / (2.0 * PI);
+color = hsv2rgb(hue, 0.8, 0.9);
+```
+
+#### Energy (Heat Map)
+Visualizes total energy (kinetic + potential) at each point.
+- Hot: High energy (antinodes in motion)
+- Cool: Low energy (nodes)
+
+```glsl
+// Energy = kinetic + potential
+float kinetic = velocity * velocity;
+float potential = height * height;
+float energy = kinetic + potential;
+color = heatmap(energy);
+```
+
+### Cymatics Drive Mode
+
+Continuously excites the membrane at a specific frequency to reveal standing wave patterns:
+
+```javascript
+// In update loop
+if (driveEnabled) {
+  const excitation = driveAmplitude * sin(2π * driveFrequency * time);
+  audioEngine.continuousExcitation(excitation);
+}
+```
+
+Sweeping through frequencies reveals resonances where clear Chladni patterns form.
+
+---
+
+## Sculpture Parameter Reference
+
+| Parameter | Range | Default | Description |
+|-----------|-------|---------|-------------|
+| **Particle Count** | 500-5000 | 2000 | Number of simulated particles |
+| **Force Strength** | 0.01-0.5 | 0.15 | Attraction to nodal lines |
+| **Damping** | 0.8-0.99 | 0.92 | Velocity friction |
+| **Noise** | 0-0.02 | 0.002 | Random motion amount |
+| **Edge Repel** | 0-0.05 | 0.015 | Push from edges |
+| **Corner Repel** | 0-0.03 | 0.01 | Extra push from corners |
+| **Shake** | 0-0.1 | 0.04 | Velocity burst on new sounds |
+| **Threshold** | 0.02-0.3 | 0.12 | Nodal line detection threshold |
+| **Opacity** | 0.1-1.0 | 0.95 | Transparency |
+| **Point Size** | 1-8 | 2.5 | Point cloud size |
 - More effect types
 - VR/AR support

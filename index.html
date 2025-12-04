@@ -845,6 +845,7 @@
     <div class="main-area">
       <div class="canvas-container">
         <canvas id="membrane-canvas"></canvas>
+        <canvas id="sculpture-canvas" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #020205;"></canvas>
         <button id="start-button">▶ Start Audio</button>
       </div>
       
@@ -914,7 +915,104 @@
             <input type="checkbox" id="rotate-toggle" checked>
             <button id="reset-camera">Reset View</button>
           </div>
+          <div class="control-row">
+            <label>Viz Mode</label>
+            <select id="viz-mode-select">
+              <option value="normal" selected>Normal (Height)</option>
+              <option value="chladni">Chladni (Nodal Lines)</option>
+              <option value="phase">Phase (Rainbow)</option>
+              <option value="energy">Energy (Heat Map)</option>
+            </select>
+          </div>
           <p class="hint">Drag to orbit • Click to strike • Scroll to zoom</p>
+        </div>
+        
+        <div class="control-section">
+          <h3>Spacetime Sculpture</h3>
+          <div class="control-row">
+            <label>Show</label>
+            <input type="checkbox" id="sculpture-toggle">
+            <button id="sculpture-clear">Clear</button>
+            <button id="sculpture-export">Export STL</button>
+          </div>
+          <div class="control-row">
+            <label>Mode</label>
+            <select id="sculpture-mode-select">
+              <option value="contours" selected>Contour Lines</option>
+              <option value="points">Point Cloud</option>
+              <option value="particles">Particle Flow</option>
+              <option value="ribbons">Ribbons</option>
+            </select>
+          </div>
+          <div class="control-row">
+            <label>Threshold</label>
+            <input type="range" id="sculpture-threshold" min="0.02" max="0.3" step="0.01" value="0.12">
+            <span class="value" id="sculpture-threshold-value">0.12</span>
+          </div>
+          <div class="control-row" id="pointsize-row" style="display: none;">
+            <label>Point Size</label>
+            <input type="range" id="sculpture-pointsize" min="1" max="8" step="0.5" value="2.5">
+            <span class="value" id="sculpture-pointsize-value">2.5</span>
+          </div>
+          <div class="control-row">
+            <label>Opacity</label>
+            <input type="range" id="sculpture-opacity" min="0.1" max="1" step="0.05" value="0.95">
+            <span class="value" id="sculpture-opacity-value">0.95</span>
+          </div>
+          <div class="control-row">
+            <label>Recording</label>
+            <input type="checkbox" id="sculpture-record" checked>
+            <span style="color: #888; font-size: 0.85rem;">Capture patterns</span>
+          </div>
+          
+          <!-- Particle parameters (shown when mode=particles) -->
+          <div id="particle-params" style="display: none; margin-top: 12px; padding: 10px; background: #1a1a25; border-radius: 6px;">
+            <div style="font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Particle Physics</div>
+            <div class="control-row">
+              <label>Count</label>
+              <input type="range" id="particle-count" min="500" max="5000" step="100" value="2000">
+              <span class="value" id="particle-count-value">2000</span>
+            </div>
+            <div class="control-row">
+              <label>Force</label>
+              <input type="range" id="particle-force" min="0.01" max="0.5" step="0.01" value="0.15">
+              <span class="value" id="particle-force-value">0.15</span>
+            </div>
+            <div class="control-row">
+              <label>Damping</label>
+              <input type="range" id="particle-damping" min="0.8" max="0.99" step="0.01" value="0.92">
+              <span class="value" id="particle-damping-value">0.92</span>
+            </div>
+            <div class="control-row">
+              <label>Noise</label>
+              <input type="range" id="particle-noise" min="0" max="0.02" step="0.001" value="0.002">
+              <span class="value" id="particle-noise-value">0.002</span>
+            </div>
+            <div class="control-row">
+              <label>Edge Push</label>
+              <input type="range" id="particle-edge-repel" min="0" max="0.05" step="0.002" value="0.015">
+              <span class="value" id="particle-edge-repel-value">0.015</span>
+            </div>
+            <div class="control-row">
+              <label>Corner Push</label>
+              <input type="range" id="particle-corner-repel" min="0" max="0.03" step="0.002" value="0.01">
+              <span class="value" id="particle-corner-repel-value">0.01</span>
+            </div>
+            <div class="control-row">
+              <label>Shake</label>
+              <input type="range" id="particle-shake" min="0" max="0.1" step="0.005" value="0.04">
+              <span class="value" id="particle-shake-value">0.04</span>
+            </div>
+            <div class="control-row">
+              <label>Size</label>
+              <input type="range" id="particle-size" min="1" max="8" step="0.5" value="3">
+              <span class="value" id="particle-size-value">3</span>
+            </div>
+            <div class="control-row">
+              <button id="particle-reset" style="width: 100%;">Reset Particles</button>
+            </div>
+          </div>
+          <p class="hint">Chladni patterns through time → 3D printable sculpture!</p>
         </div>
         
         <div class="control-section">

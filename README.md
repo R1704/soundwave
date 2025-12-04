@@ -1,6 +1,6 @@
 # Modal Drum Synthesizer
 
-A WebGL-powered modal synthesizer that simulates the physics of a vibrating square membrane. Create unique percussion sounds by exciting different vibrational modes and visualize the resulting wave patterns in real-time 3D.
+A WebGL-powered modal synthesizer that simulates the physics of a vibrating square membrane. Create unique percussion sounds by exciting different vibrational modes and visualize the resulting wave patterns in real-time 3D. Features advanced cymatics-inspired visualizations including Chladni patterns, spacetime sculptures, and particle simulations.
 
 ![Modal Drum](https://img.shields.io/badge/WebGL-3D%20Visualization-blue)
 ![Audio](https://img.shields.io/badge/WebAudio-Modal%20Synthesis-green)
@@ -14,6 +14,7 @@ A WebGL-powered modal synthesizer that simulates the physics of a vibrating squa
 - **Chord Presets** - Pre-configured mode combinations (Fundamental, Diagonal, Cross, Star, etc.)
 - **Reverb Effect** - Synthetic convolution reverb with adjustable wet/dry mix
 - **Attack Transients** - Percussive noise bursts for realistic drum attacks
+- **ADSR Envelope** - Full attack, decay, sustain, release controls with visual display
 
 ### 🎹 Chord Articulation
 - **Instant Mode** - All modes triggered simultaneously
@@ -29,18 +30,51 @@ A WebGL-powered modal synthesizer that simulates the physics of a vibrating squa
 - **Tempo Control** - 40-200 BPM
 
 ### 🎨 3D Visualization
+
+#### Membrane View
 - **GPU-Accelerated** - All mode summation computed in vertex shader
 - **Real-time Wave Display** - See the membrane vibrate in response to audio
-- **Height-based Coloring** - Peaks glow warm (cyan→white→orange), troughs glow cool (slate→indigo→purple)
-- **Hemisphere Lighting** - Soft, even illumination from all angles
-- **Interactive Camera** - Drag to orbit, scroll to zoom
-- **Auto-rotation** - Optional continuous rotation
+- **Multiple Visualization Modes:**
+  - **Normal (Height)** - Classic height-based coloring with peaks glowing warm
+  - **Chladni (Nodal Lines)** - Shows stationary nodal patterns like sand on a vibrating plate
+  - **Phase (Rainbow)** - Stunning color cycling based on oscillation phase
+  - **Energy (Heat Map)** - Visualizes kinetic + potential energy distribution
+- **Interactive Camera** - Drag to orbit, scroll to zoom, auto-rotation option
+
+#### Spacetime Sculpture 🆕
+Extrude Chladni patterns through time to create 3D sculptures - like freezing sound in amber!
+
+- **Multiple Render Modes:**
+  - **Contour Lines** - Precise nodal lines extracted using marching squares algorithm
+  - **Point Cloud** - Scattered points along nodal regions
+  - **Particle Flow** - Simulates sand/particles flowing toward nodal lines (cymatics!)
+  - **Ribbons** - Solid surfaces connecting contour lines through time
+- **Real-time Recording** - Captures patterns as you play
+- **STL Export** - Export sculptures for 3D printing!
+- **Adjustable Parameters** - Threshold, opacity, point size
+
+#### Particle Physics System 🆕
+Full particle simulation with tunable parameters:
+- **Count** - 500 to 5000 particles
+- **Force Strength** - How strongly particles are attracted to nodal lines
+- **Damping** - Velocity friction for smooth or energetic motion
+- **Noise** - Random motion for organic feel
+- **Edge/Corner Repulsion** - Keeps particles away from boundaries
+- **Shake** - Velocity burst on new sounds to redistribute particles
+- **Reset Button** - Scatter particles back to random positions
+
+### 🔊 Cymatics Mode
+- **Continuous Drive** - Excite the membrane at a specific frequency
+- **Frequency Sweep** - Find resonances by sweeping 50-1200 Hz
+- **Amplitude Control** - Adjust drive strength
+- **Resonance Discovery** - Watch Chladni patterns form at resonant frequencies
 
 ### 🎛️ Controls
 - **Virtual Microphone** - Position affects which modes are audible
 - **Decay Control** - Adjust resonator ring time
 - **Grid Resolution** - 32×32 to 128×128 visualization detail
 - **Visual Height Scale** - Adjust wave amplitude display
+- **Modal Scales** - Filter available modes (Chromatic, Pentatonic, Diagonal, etc.)
 
 ## Quick Start
 
@@ -88,17 +122,18 @@ A WebGL-powered modal synthesizer that simulates the physics of a vibrating squa
 
 ```
 soundwave/
-├── index.html              # UI and styling
+├── index.html                  # UI and styling
 ├── src/
-│   ├── main.js             # Application orchestration
-│   ├── audio-engine.js     # WebAudio management, effects chain
-│   ├── audio-worklet.js    # Real-time resonator synthesis
-│   ├── modes.js            # Modal physics calculations
-│   ├── modal-harmony.js    # Chord theory, presets, voice leading
-│   ├── chord-articulator.js # Strum/arpeggio articulation
-│   ├── euclidean-sequencer.js # Bjorklund rhythm generator
-│   ├── sequencer.js        # Step sequencer (legacy)
-│   └── webgl-renderer.js   # GPU-based 3D visualization
+│   ├── main.js                 # Application orchestration
+│   ├── audio-engine.js         # WebAudio management, effects chain
+│   ├── audio-worklet.js        # Real-time resonator synthesis
+│   ├── modes.js                # Modal physics calculations
+│   ├── modal-harmony.js        # Chord theory, presets, voice leading
+│   ├── chord-articulator.js    # Strum/arpeggio articulation
+│   ├── euclidean-sequencer.js  # Bjorklund rhythm generator
+│   ├── sequencer.js            # Step sequencer (legacy)
+│   ├── webgl-renderer.js       # GPU-based 3D membrane visualization
+│   └── spacetime-sculpture.js  # 3D Chladni sculpture renderer
 ```
 
 ## The Physics
